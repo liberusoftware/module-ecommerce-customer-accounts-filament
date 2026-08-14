@@ -1,40 +1,117 @@
-# Ecommerce: Customer Accounts Filament
+# Ecommerce Customer Accounts — Filament panel
 
-> This optional Filament 5 presentation package presents exactly one independent domain module. It contributes reusable resources, pages, widgets, schemas, tables, infolists, and actions to application-owned panels while delegating authorization, validation, tenancy, persistence, and business rules to the ecommerce-customer-accounts public boundary
+[![Tests](https://github.com/liberusoftware/module-ecommerce-customer-accounts-filament/actions/workflows/tests.yml/badge.svg)](https://github.com/liberusoftware/module-ecommerce-customer-accounts-filament/actions/workflows/tests.yml)
 
-[Software](https://liberusoftware.com) ·
-[Hosting](https://liberuhosting.com) ·
-[Services](https://liberuservices.com) ·
-[Liberu Group](https://liberugroup.com)
+The privacy desk over
+[`liberusoftware/ecommerce-customer-accounts`](https://github.com/liberusoftware/module-ecommerce-customer-accounts):
+privacy requests with their reach, deadline and **every participant's answer
+including the ones that answered nothing**; the participant registry showing
+which modules are registered and which of them are silent; failed guest-order
+claim attempts; and saved lists, read-only.
 
-![PHP](https://img.shields.io/badge/PHP-8.5-777BB4?logo=php&logoColor=white) ![Laravel](https://img.shields.io/badge/Laravel-13-FF2D20?logo=laravel&logoColor=white) ![Filament](https://img.shields.io/badge/Filament-5-FDAE4B)
-[![Latest release](https://img.shields.io/github/v/release/liberusoftware/module-ecommerce-customer-accounts-filament?sort=semver)](https://github.com/liberusoftware/module-ecommerce-customer-accounts-filament/releases/latest) [![Tests](https://github.com/liberusoftware/module-ecommerce-customer-accounts-filament/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/liberusoftware/module-ecommerce-customer-accounts-filament/actions/workflows/tests.yml)
+Everything here is an operator surface. The shopper's side — claiming a guest
+order, keeping a list, opening a case and watching it progress honestly — is the
+`-livewire` package's.
 
-## Features
+## What this panel refuses to say
 
-- Fully compatible with **Laravel 13**, **PHP 8.5**, and **Pest 5**.
-- Built following the domain-driven design guidelines of the Liberu architecture.
-- Reusable, presenting a clean public contract and boundaries.
-- Adheres to the strict database, security, and authorization standards of Liberu.
+The module exists because the host answered an erasure request with
+`{"success": true}` from a function that ran inside an HTTP request, wrote ten
+tables belonging to six modules, and had never heard of the others. There was no
+case, no participant, no record of who asked, and nobody to quote a number at
+when it half-failed.
+
+So this panel never renders an unanswered question as a finished one:
+
+| The state | What you see | What you never see |
+| --- | --- | --- |
+| Three of five participants completed | **3 of 5 answered**, the other two named | a tick |
+| A participant with nothing bound to it | **Unavailable** — "nothing is bound to answer for it" | the participant omitted from the case |
+| A module that publishes an erasure and no export | **Unavailable** — "Publishes no access." | an export that looks whole |
+| A case concluded with anyone outstanding | **Completed in part**, naming them | **Completed** |
+| A registry with nobody in it | **every case opened will be unsatisfiable** | an empty table |
+| A deadline that has passed | **Past its deadline**, and nothing acts on it | a promise that something will |
+
+Those are the differences a person's rights are made of. "Your data has been
+erased" is a claim about all of it.
+
+## Attaching it
+
+The package ships **no** `extra.laravel.providers` and its service provider
+registers no surface. A panel is composed by the host, so everything arrives
+through a plugin attached to exactly the panels it means to:
+
+```php
+use Filament\Facades\Filament;
+use Liberu\Ecommerce\CustomerAccounts\Filament\CustomerAccountsPlugin;
+
+public function panel(Panel $panel): Panel
+{
+    return $panel
+        ->id('admin')
+        ->plugin(
+            CustomerAccountsPlugin::make()
+                ->tenantUsing(fn (): string => (string) Filament::getTenant()?->getKey()),
+        );
+}
+```
+
+**Do not attach this to a shopper-facing panel.**
+
+`tenantUsing()` is optional and defaults to the panel's own Filament tenant. An
+unresolvable or empty tenant throws rather than returning null, because
+`where('tenant_id', null)` compiles to `is null` and lists exactly the orphan
+rows a scope was meant to hide.
+
+See [`docs/adoption.md`](docs/adoption.md) for the Composer entries and — the
+step that actually matters — registering your participants.
+[`docs/panel.md`](docs/panel.md) is what is on each screen and why;
+[`docs/runbook.md`](docs/runbook.md) is how to work a case.
+
+## What is in the panel
+
+Three resources, one page and one widget, all under **Privacy desk**:
+
+- **Privacy requests** — the cases, with `ParticipantsRelationManager` on each
+- **Participant registry** — who takes part, and which of them is silent
+- **Claim attempts** — the failures, which are the security signal
+- **Saved lists** — with items and share links, read-only
+- **Desk overview** — cases running, cases late, cases partial, silent participants
+
+## Constraints worth knowing before you read the code
+
+- **A cross-tenant case is not a null tenant.** `tenant_id` is NOT NULL on every
+  table and means where the case was raised; reach is `RequestScope`. The panel
+  filters on scope and never on an absent merchant.
+- **Nothing sensitive is searchable or filterable.** Search terms and filter
+  state both persist into the query string. The case reference is searchable
+  because it is our own case number; the subject reference, the order reference
+  and the email fingerprint are not, and the fingerprint is not even a column.
+- **No claim token and no share token is ever rendered or logged.** Each exists
+  readable exactly once, at minting, and is stored only as a fingerprint.
+- **This module is not a participant of its own registry** and is never drawn as
+  one.
+- **Nothing schedules anything**, nothing auto-concludes, and there is no
+  cooling-off period. All three would need a clock this module does not have.
+- **Nothing here writes into another module's tables.** A retry re-commissions
+  our own case through the one contract this package publishes.
+- **Every unpublished Filament ability is forced false by name**, per resource
+  and per relation manager, `canAssociate` and `canDissociate` included. A
+  missing policy is permissive, and a policy missing the method asked about is
+  *also* permissive.
 
 ## Requirements
 
-- **PHP 8.5**
-- **Composer 2**
-- A supported database (e.g. MySQL, PostgreSQL, SQLite)
+- PHP `^8.5`
+- `filament/filament` `^5.6`
+- `liberusoftware/ecommerce-customer-accounts` `^0.1`
 
-## Quick start
-
-To install this package via Composer, run:
-
-```bash
-composer require liberusoftware/module-ecommerce-customer-accounts-filament
-```
-
-## Documentation
-
-- [Liberu Main Documentation](https://github.com/liberusoftware/documentation)
-- [Architecture & Standards Index](https://github.com/liberusoftware/documentation/tree/main/architecture)
+**`^5.6` is a choice, not a requirement.** Filament's true Laravel-13 floor is
+`^5.4`: reading each tag's own `packages/support/composer.json`, `v5.3.0` caps at
+`illuminate/contracts: ^11.28|^12.0` and `v5.4.0` is the first to add `^13.0`,
+which `filament/filament` inherits through `self.version`. We pin higher because
+that is the range this package's suite is exercised against, not because anything
+below it is known to break.
 
 ## Related Liberu Projects
 

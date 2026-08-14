@@ -1,0 +1,34 @@
+{
+    "name": "ecommerce-customer-accounts-filament",
+    "version": "0.1.0",
+    "description": "The privacy desk: cases with every participant's answer including the silent ones, the participant registry, failed claim attempts and saved lists.",
+    "category": "presentation",
+    "provider": "Liberu\\Ecommerce\\CustomerAccounts\\Filament\\CustomerAccountsFilamentServiceProvider",
+    "requires": {
+        "packages": {
+            "liberusoftware/ecommerce-customer-accounts": "^0.1"
+        }
+    },
+    "presentation": {
+        "filament": {
+            "admin": [
+                "Liberu\\Ecommerce\\CustomerAccounts\\Filament\\CustomerAccountsPlugin"
+            ]
+        }
+    },
+    "features": [
+        "Every participant of every case is listed, including the ones that answered nothing and why",
+        "A case that did not reach every participant is rendered as completed in part, never as done",
+        "The participant registry screen names which modules are registered and which of them are silent",
+        "An empty registry is shown as a defect, because a case that asked nobody cannot be satisfied",
+        "A cross-tenant case is found by its request scope and never by a null tenant id",
+        "This module is not a participant of its own registry and is never rendered as one",
+        "A claim token is never displayed and an email fingerprint is never a column, a search or a filter",
+        "Failed claim attempts are the security signal, listed with the outcome that refused them",
+        "Nothing implies a deadline sweeper, an auto-conclusion or a cooling-off window, because none exist",
+        "Withdrawal is offered until the case concludes and is never dressed up as still cancellable",
+        "No participant's own tables are ever written from this panel; a retry re-commissions our own case",
+        "Saved lists, their items and their shares are read-only and hold no price",
+        "Every unpublished Filament ability forced closed by name, per resource and per relation manager"
+    ]
+}
